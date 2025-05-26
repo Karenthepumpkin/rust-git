@@ -1,3 +1,6 @@
+mod cli;
+pub mod commands;
+pub mod core;
 fn main() {
-    println!("Hello, world!");
+    cli::command::git_execute();
 }
