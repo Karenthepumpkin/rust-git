@@ -1,36 +1,37 @@
-use std::fs::File;
 use std::path::Path;
-pub enum Object {
-    Commit(String),
-    Tree(String),
-    Blob(String),
+use std::fs::File;
+pub fn is_git_repo(path: &str) -> bool {
+    let git_dir = format!("{}/.git", path);
+    Path::new(&git_dir).exists() // 检测.git目录
 }
-pub fn save(object: Object, workspace: &str) -> String {
+pub enum FileType {
+    BLOB,
+    COMMIT,
+    TREE,
+}
+pub fn add_git_file(filetype: FileType, content: &str) -> String {
     //TODO: Implement actual blob creation logic
-    match object {
-        Object::Blob(content) => {
+    match filetype {
+        FileType::BLOB => {
             let blob_string = format!("blob {}\0{}", content.len(), content);
             let hash = crate::utils::hash::hash(&blob_string);
             let path = crate::utils::hash::hash2path(hash);
-            let path = format!("{}/{}", workspace, path);
             File::create(&path).expect("Failed to create blob file");
             path
         }
-        Object::Commit(content) => {
+        FileType::COMMIT => {
             // 创建 COMMIT 对象
             let commit_string = format!("commit {}\0{}", content.len(), content);
             let hash = crate::utils::hash::hash(&commit_string);
             let path = crate::utils::hash::hash2path(hash);
-            let path = format!("{}/{}", workspace, path);
             File::create(&path).expect("Failed to create blob file");
             path
         }
-        Object::Tree(content) => {
+        FileType::TREE => {
             // 创建 TREE 对象
             let tree_string = format!("tree {}\0{}", content.len(), content);
             let hash = crate::utils::hash::hash(&tree_string);
             let path = crate::utils::hash::hash2path(hash);
-            let path = format!("{}/{}", workspace, path);
             File::create(&path).expect("Failed to create blob file");
             path
         }

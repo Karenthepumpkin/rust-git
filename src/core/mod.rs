@@ -1,6 +1,6 @@
-pub mod object;
-pub mod index;
-pub mod reference;
-pub mod commit;
 pub mod blob;
+pub mod commit;
+pub mod index;
+pub mod object;
+pub mod reference;
 pub mod repository;

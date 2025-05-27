@@ -11,7 +11,7 @@ impl Reference {
     }
     /// 解析引用内容
     pub fn resolve(repo_path: &str, ref_name: &str) -> Option<String> {
-		//TODO
-	}
+        //TODO
+    }
 }
 */
