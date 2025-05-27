@@ -9,7 +9,6 @@ impl Repository {
     // 初始化新仓库
     pub fn init(path: &str) -> Self {
         // 创建 .git 目录结构
-        println!("Initializing Git repository at {}", path);
         create_dir(".git").ok();
         create_dir(".git/objects").ok(); // 对象存储
         create_dir(".git/refs").ok();
