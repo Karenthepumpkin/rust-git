@@ -1,6 +1,6 @@
 use crate::core::repository::{self};
+use crate::debug_log;
 use crate::repo;
-use crate::{debug_log};
 pub fn init_command(path: &str) {
     // 初始化 Git 仓库
     // 创建 .git 目录结构

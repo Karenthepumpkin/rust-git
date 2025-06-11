@@ -5,6 +5,9 @@ pub enum ArgType {
     Add(String),
     Rm(String),
     Commit(String),
+    Branch(String),
+    Checkout(String),
+    Merge(String),
 }
 pub fn git_parse_args() -> ArgType {
     use std::env;
@@ -37,6 +40,27 @@ pub fn git_parse_args() -> ArgType {
                 match args.len() {
                     2 => ArgType::Error(ErrorType::InvalidArgument), // 如果只有 commit 命令则报错
                     4 => ArgType::Commit(args[3].clone()), // 如果有额外参数则使用该参数作为路径
+                    _ => ArgType::Error(ErrorType::InvalidArgument), // 如果有额外参数则报错
+                }
+            }
+            "branch" => {
+                match args.len() {
+                    2 => ArgType::Error(ErrorType::InvalidArgument), // 如果只有 branch 命令则报错
+                    3 => ArgType::Branch(args[2].clone()), // 如果有额外参数则使用该参数作为路径
+                    _ => ArgType::Error(ErrorType::InvalidArgument), // 如果有额外参数则报错
+                }
+            }
+            "checkout" => {
+                match args.len() {
+                    2 => ArgType::Error(ErrorType::InvalidArgument), // 如果只有 checkout 命令则报错
+                    3 => ArgType::Checkout(args[2].clone()), // 如果有额外参数则使用该参数作为路径
+                    _ => ArgType::Error(ErrorType::InvalidArgument), // 如果有额外参数则报错
+                }
+            }
+            "merge" => {
+                match args.len() {
+                    2 => ArgType::Error(ErrorType::InvalidArgument), // 如果只有 checkout 命令则报错
+                    3 => ArgType::Merge(args[2].clone()), // 如果有额外参数则使用该参数作为路径
                     _ => ArgType::Error(ErrorType::InvalidArgument), // 如果有额外参数则报错
                 }
             }

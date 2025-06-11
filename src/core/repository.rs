@@ -1,13 +1,14 @@
+use crate::commands::branch;
 use crate::debug_log;
 // Git 仓库核心模块
 use super::blob::{self, BlobProcessor};
 use super::commit::CommitBuilder;
 use super::index::Index;
-use super::tree::TreeBuilder;
 use super::reference::Reference;
+use super::tree::TreeBuilder;
 use std::fs::{File, create_dir};
-use std::io::Write;
-use std::path::Path;
+use std::io::{BufRead, BufReader, Write};
+use std::path::{self, Path};
 use std::sync::Arc;
 pub struct Repository {
     path: Arc<String>,             // 仓库路径
@@ -93,15 +94,67 @@ impl Repository {
             .commit
             .create_commit(&tree_hash, parent_commit.as_deref(), message);
         if let Some(current_branch) = current_branch {
-            self.reference.set_last_commit(&current_branch, &commit_hash);
+            self.reference
+                .set_last_commit(&current_branch, &commit_hash);
         }
         commit_hash
+    }
+    pub fn new_branch(&mut self, branch_name: &str) -> bool {
+        let current_branch = self.reference.get_current_branch();
+        let last_commit = if let Some(ref branch) = current_branch {
+            self.reference.get_last_commit(branch)
+        } else {
+            None
+        };
+        if last_commit.is_none() {
+            debug_log!("No commits found to create a new branch");
+            return false;
+        }
+        self.reference
+            .new_branch(branch_name, &last_commit.unwrap());
+        true
+    }
+    pub fn set_current_branch(&mut self, branch_name: &str) -> bool {
+        if self.reference.set_current_branch(branch_name) {
+            debug_log!("Switched to branch: {}", branch_name);
+        } else {
+            debug_log!("Failed to switch to branch: {}", branch_name);
+            return false;
+        }
+        let commit_path_opt = self.reference.get_current_branch();
+        let commit_path = match commit_path_opt {
+            Some(ref path) => path,
+            None => {
+                debug_log!("No current branch found");
+                return false;
+            }
+        };
+        let file = match File::open(commit_path) {
+            Ok(f) => f,
+            Err(_) => {
+                debug_log!("Failed to open commit path file {}", commit_path);
+                return false;
+            }
+        };
+        let mut reader = BufReader::new(file);
+        let mut first_line = String::new();
+        if let Ok(n) = reader.read_line(&mut first_line) {
+            if n > 0 {
+                if let Some(_tree_hash) = first_line.strip_prefix("tree ") {
+                    self.index.load_from(_tree_hash.to_string());
+                }
+            }
+        }
+        true
     }
     pub fn exit(&self) {
         // 保存索引
         if !self.index.save() {
             debug_log!("Failed to save index");
         }
+    }
+    pub fn refresh(&self) {
+        self.index.refresh();
     }
 }
 pub fn is_git_repo(path: &str) -> bool {

@@ -17,8 +17,8 @@ impl BlobProcessor {
         let content = match fs::read_to_string(path) {
             Ok(c) => c,
             Err(e) => {
-            debug_log!("Failed to read file {}: {}", path, e);
-            return String::new();
+                debug_log!("Failed to read file {}: {}", path, e);
+                return String::new();
             }
         };
         crate::core::object::save(

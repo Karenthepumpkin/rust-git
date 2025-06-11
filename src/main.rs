@@ -22,4 +22,5 @@ fn main() {
         repo!().open(".");
     }
     cli::command::git_execute();
+    repo!().exit();
 }
