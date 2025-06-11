@@ -1,6 +1,6 @@
-use crate::core::repository::{self, Repository};
-use crate::{debug_log, REPO};
+use crate::core::repository::{self};
 use crate::repo;
+use crate::{debug_log};
 pub fn init_command(path: &str) {
     // 初始化 Git 仓库
     // 创建 .git 目录结构
@@ -13,5 +13,5 @@ pub fn init_command(path: &str) {
     } else {
         debug_log!("A Git repository already exists in this directory.");
         repo!().open(path);
-	}
+    }
 }

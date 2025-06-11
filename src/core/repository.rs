@@ -1,20 +1,21 @@
 use crate::debug_log;
-
 // Git 仓库核心模块
 use super::blob::{self, BlobProcessor};
-use super::tree::{TreeBuilder};
-use super::commit::{CommitBuilder};
+use super::commit::CommitBuilder;
 use super::index::Index;
+use super::tree::TreeBuilder;
+use super::reference::Reference;
 use std::fs::{File, create_dir};
+use std::io::Write;
 use std::path::Path;
 use std::sync::Arc;
-use std::io::Write;
 pub struct Repository {
     path: Arc<String>,             // 仓库路径
     blob_processor: BlobProcessor, // 数据对象处理器
     index: Index,
-    tree: TreeBuilder, // 树构建器
+    tree: TreeBuilder,     // 树构建器
     commit: CommitBuilder, // 提交构建器
+    reference: Reference,
 }
 impl Repository {
     // 初始化新仓库
@@ -26,9 +27,10 @@ impl Repository {
             index: Index::new(&path),
             tree: TreeBuilder::new(&path),
             commit: CommitBuilder::new(&path),
+            reference: Reference::new(&path),
         }
     }
-    pub fn init(&mut self,path: &str) {
+    pub fn init(&mut self, path: &str) {
         // 拼接路径并创建 .git 目录结构
         let git_dir = format!("{}/.git", path);
         let objects_dir = format!("{}/objects", git_dir);
@@ -52,7 +54,7 @@ impl Repository {
         self.open(path);
     }
     // 打开现有仓库
-    pub fn open(&mut self ,path: &str) {
+    pub fn open(&mut self, path: &str) {
         if is_git_repo(path) {
             self.path = Arc::new(path.to_string());
             self.blob_processor.setpath(&self.path);
@@ -81,25 +83,26 @@ impl Repository {
         // 创建树对象
         let tree_hash = self.tree.create_tree(&self.index.get_tree());
         // 创建提交对象
-        let parent_commit = self.get_last_commit();
-        let commit_hash = self.commit.create_commit(&tree_hash, parent_commit.as_deref(), message);
-        // 清空索引
+        let current_branch = self.reference.get_current_branch();
+        let parent_commit = if let Some(ref branch) = current_branch {
+            self.reference.get_last_commit(branch)
+        } else {
+            None
+        };
+        let commit_hash = self
+            .commit
+            .create_commit(&tree_hash, parent_commit.as_deref(), message);
+        if let Some(current_branch) = current_branch {
+            self.reference.set_last_commit(&current_branch, &commit_hash);
+        }
         commit_hash
     }
-    pub fn get_last_commit(&self) -> Option<String> {
-        let head_file = format!("{}/.git/HEAD", self.path);
-        if let Ok(content) = std::fs::read_to_string(&head_file) {
-            if content.starts_with("ref: ") {
-                let ref_path = content.trim().strip_prefix("ref: ").unwrap();
-                let commit_file = format!("{}/.git/{}", self.path, ref_path);
-                if let Ok(commit_hash) = std::fs::read_to_string(commit_file) {
-                    return Some(commit_hash.trim().to_string());
-                }
-            } else {
-                return Some(content.trim().to_string());
-            }
+    pub fn exit(&self) {
+        // 保存索引
+        if !self.index.save() {
+            debug_log!("Failed to save index");
         }
-        None
+    }
 }
 pub fn is_git_repo(path: &str) -> bool {
     let git_dir = format!("{}/.git", path);

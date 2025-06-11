@@ -1,8 +1,6 @@
-use std::path;
-
 use crate::cli::args::git_parse_args;
-use crate::commands::init::init_command;
 use crate::commands::add::add_command;
+use crate::commands::init::init_command;
 use crate::debug_log;
 
 pub fn git_execute() {

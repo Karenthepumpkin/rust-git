@@ -11,5 +11,5 @@ pub fn hash(s: &str) -> [u8; 20] {
 pub fn hash2path(hash: [u8; 20]) -> String {
     let hash_str: String = hash.iter().map(|b| format!("{:02x}", b)).collect();
     let (dir, file) = hash_str.split_at(2);
-    format!(".git/object/{}/{}", dir, file)
+    format!(".git/objects/{}/{}", dir, file)
 }

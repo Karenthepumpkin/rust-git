@@ -2,7 +2,7 @@ use crate::debug_log;
 use std::collections::{HashMap, HashSet};
 use std::fmt::format;
 use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Write};
 use std::option;
 use std::{os::unix::fs, sync::Arc};
 pub struct Index {
@@ -44,7 +44,23 @@ impl Index {
         }
         true
     }
-
+    pub fn save(&self) -> bool {
+        let index_path = format!("{}/.git/index", self.repo_path);
+        let mut file = match File::create(&index_path) {
+            Ok(f) => f,
+            Err(e) => {
+                debug_log!("Failed to create index file: {}", e);
+                return false;
+            }
+        };
+        for (path, hash) in &self.staged_files {
+            if let Err(e) = writeln!(file, "{}\t{}", path, hash) {
+                debug_log!("Failed to write to index file: {}", e);
+                return false;
+            }
+        }
+        true
+    }
     pub fn stage_file(&mut self, path: &str, hash: &str) {
         self.staged_files.insert(path.to_string(), hash.to_string());
     }

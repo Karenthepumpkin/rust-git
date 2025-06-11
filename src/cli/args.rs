@@ -19,8 +19,8 @@ pub fn git_parse_args() -> ArgType {
                     _ => ArgType::Error(ErrorType::InvalidArgument), // 如果有额外参数则报错
                 }
             }
-            "add" =>{
-                match args.len(){
+            "add" => {
+                match args.len() {
                     2 => ArgType::Error(ErrorType::InvalidArgument), // 如果只有 add 命令则报错
                     3 => ArgType::Add(args[2].clone()), // 如果有额外参数则使用该参数作为路径
                     _ => ArgType::Error(ErrorType::InvalidArgument), // 如果有额外参数则报错
@@ -36,7 +36,7 @@ pub fn git_parse_args() -> ArgType {
             "commit" => {
                 match args.len() {
                     2 => ArgType::Error(ErrorType::InvalidArgument), // 如果只有 commit 命令则报错
-                    3 => ArgType::Commit(args[2].clone()), // 如果有额外参数则使用该参数作为路径
+                    4 => ArgType::Commit(args[3].clone()), // 如果有额外参数则使用该参数作为路径
                     _ => ArgType::Error(ErrorType::InvalidArgument), // 如果有额外参数则报错
                 }
             }

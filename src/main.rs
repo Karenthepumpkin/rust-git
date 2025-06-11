@@ -1,6 +1,6 @@
+use crate::core::repository::{Repository, is_git_repo};
 use once_cell::sync::Lazy;
 use std::sync::Mutex;
-use crate::core::repository::{is_git_repo, Repository};
 
 mod cli;
 mod commands;
@@ -15,9 +15,7 @@ macro_rules! repo {
 }
 
 // 创建全局可变 Repository
-pub static REPO : Lazy<Mutex<Repository>> = Lazy::new(|| {
-    Mutex::new(Repository::new("."))
-});
+pub static REPO: Lazy<Mutex<Repository>> = Lazy::new(|| Mutex::new(Repository::new(".")));
 
 fn main() {
     if is_git_repo(".") {

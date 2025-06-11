@@ -11,8 +11,16 @@ impl BlobProcessor {
             repo_path: Arc::clone(repo_path),
         }
     }
-    pub fn create_blob(&self, content: &str) -> String {
+    pub fn create_blob(&self, path: &str) -> String {
         //TODO: Implement actual blob creation logic
+        debug_log!("Creating blob with path: {}", path);
+        let content = match fs::read_to_string(path) {
+            Ok(c) => c,
+            Err(e) => {
+            debug_log!("Failed to read file {}: {}", path, e);
+            return String::new();
+            }
+        };
         crate::core::object::save(
             crate::core::object::Object::Blob(content.to_string()),
             self.repo_path.as_str(),

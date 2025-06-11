@@ -12,11 +12,8 @@ impl TreeBuilder {
     }
     pub fn create_tree(&self, include_file: &str) -> String {
         crate::core::object::save(
-            crate::core::object::Object::Tree(
-                include_file.to_string()
-            ),
+            crate::core::object::Object::Tree(include_file.to_string()),
             self.repo_path.as_str(),
         )
     }
 }
-
