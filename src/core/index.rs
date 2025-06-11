@@ -51,4 +51,11 @@ impl Index {
     pub fn unstage_file(&mut self, path: &str) -> Option<String> {
         self.staged_files.remove(path)
     }
+    pub fn get_tree(&self) -> String {
+        self.staged_files
+            .iter()
+            .map(|(path, hash)| format!("{}\t{}", path, hash))
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
 }

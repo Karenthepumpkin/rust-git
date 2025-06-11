@@ -4,3 +4,4 @@ pub mod index;
 pub mod object;
 pub mod reference;
 pub mod repository;
+pub mod tree;

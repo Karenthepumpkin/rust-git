@@ -1,6 +1,6 @@
 use once_cell::sync::Lazy;
 use std::sync::Mutex;
-use crate::core::repository::Repository;
+use crate::core::repository::{is_git_repo, Repository};
 
 mod cli;
 mod commands;
@@ -20,5 +20,8 @@ pub static REPO : Lazy<Mutex<Repository>> = Lazy::new(|| {
 });
 
 fn main() {
+    if is_git_repo(".") {
+        repo!().open(".");
+    }
     cli::command::git_execute();
 }
