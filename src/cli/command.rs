@@ -29,13 +29,6 @@ pub fn git_execute() {
         crate::cli::args::ArgType::Branch(args) => {
             debug_log!("Checking out branch: {}", args);
             match args[0].as_str() {
-                "-b" => {
-                    crate::commands::branch::branch_command(
-                        &args[1],
-                        crate::commands::branch::BranchCommandType::New,
-                    );
-                    debug_log!("Checking out branch: {}", args[0]);
-                }
                 "-d" => {
                     crate::commands::branch::branch_command(
                         &args[1],
@@ -43,7 +36,13 @@ pub fn git_execute() {
                     );
                     debug_log!("Checking out branch: {}", args[1]);
                 }
-                _ => {}
+                _ => {
+                    crate::commands::branch::branch_command(
+                        &args[0],
+                        crate::commands::branch::BranchCommandType::New,
+                    );
+                    debug_log!("Checking out branch: {}", args[0]);
+                }
             }
         }
         crate::cli::args::ArgType::Checkout(args) => {
