@@ -1,5 +1,6 @@
 # 当前目录位于 testcases
  # 创建一个空目录 test4
+ rm -rf test6
  mkdir test6
  # 拷贝 rust-git 到 test4 目录
 cp ../target/debug/rust-git test6/ 
@@ -13,16 +14,12 @@ cd test6
 echo 'use std::fs::File;
  use std::io::{self, Read};
  fn main() -> io::Result<()> {
- // 打开当前目录下的 test.txt 文件
-let mut file = File::open("test.txt")?;
- // 创建一个字符串来存储文件内容
-let mut contents = String::new();
- // 读取文件内容到字符串
-file.read_to_string(&mut contents)?;
- // 打印文件内容
-println!("{}", contents);
- Ok(())
- }' > main.rs
+ let mut file = File::open("test.txt")?;
+ let mut contents = String::new();
+ file.read_to_string(&mut contents)?;
+ 
+ println!("{}", contents);
+ Ok(())}' > main.rs
  # 添加并提交 main.rs
  ./rust-git add .
  commit_hash=$(./rust-git commit -m "update main.rs" 2>&1)
@@ -42,9 +39,9 @@ echo "测试分支合并" > test.txt
  # 编译 main.rs
  rustc main.rs
  # 运行 main.rs 并检查输出
-if ./main | grep-q "测试分支合并"; then
- echo "Test 4 passed: git merge succeeded and main.rs output is correct"
- else
- Fi
- echo "Test 4 failed: main.rs output is incorrect"
- exit 1
+if ./main | grep -q "测试分支合并"; then
+  echo "Test 4 passed: git merge succeeded and main.rs output is correct"
+else
+  echo "Test 4 failed: main.rs output is incorrect"
+  exit 1
+fi

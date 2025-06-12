@@ -1,3 +1,4 @@
+use crate::debug_log;
 use sha1::{Digest, Sha1};
 
 pub fn hash(s: &Vec<u8>) -> [u8; 20] {
@@ -6,6 +7,7 @@ pub fn hash(s: &Vec<u8>) -> [u8; 20] {
     hasher.update(s);
     let result = hasher.finalize();
     let hash: [u8; 20] = result.into();
+    let result = String::from_utf8(s.clone());
     hash
 }
 pub fn hash2path(hash: [u8; 20]) -> String {

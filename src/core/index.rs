@@ -1,4 +1,6 @@
 use crate::debug_log;
+use crate::utils::hash::hashstr2path;
+use core::hash;
 use std::collections::{HashMap, HashSet};
 use std::fmt::format;
 use std::fs::{File, read, write};
@@ -12,7 +14,7 @@ pub struct Index {
 pub fn merge_conflict(path1: String, path2: String, filename: String) {
     use std::fs;
     use std::io::{BufRead, BufReader};
-
+    debug_log!("Start Merge conflict\n");
     let file1 = match fs::File::open(&path1) {
         Ok(f) => f,
         Err(e) => {
@@ -141,14 +143,19 @@ impl Index {
     ) -> bool {
         self.staged_files.clear();
         let mut base_staged_files: HashMap<String, String> = HashMap::new();
-
+        debug_log!(
+            "load_merge : path : {} path_merge: {} path_base:{}",
+            path.as_deref().unwrap_or("None"),
+            path_merge.as_deref().unwrap_or("None"),
+            path_base.as_deref().unwrap_or("None")
+        );
         // 封装读取 index 文件的逻辑
         fn read_index(path: &str) -> Option<Vec<(String, String)>> {
             let file = match File::open(path) {
                 Ok(f) => f,
                 Err(e) => {
                     debug_log!("Failed to open index file: {}", e);
-                    File::create(path).ok()?;
+                    // File::create(path).ok()?;
                     return None;
                 }
             };
@@ -168,6 +175,7 @@ impl Index {
             }
             Some(entries)
         }
+        /* 
         if let Some(path_base) = path_base {
             let index_path = format!("{}/{}", self.repo_path, path_base);
             if let Some(entries) = read_index(&index_path) {
@@ -179,6 +187,7 @@ impl Index {
                 return false;
             }
         }
+        */
         if let Some(path) = &path {
             let index_path = format!("{}/{}", self.repo_path, path);
             if let Some(entries) = read_index(&index_path) {
@@ -196,19 +205,25 @@ impl Index {
             let index_path = format!("{}/{}", self.repo_path, path_merge);
             if let Some(entries) = read_index(&index_path) {
                 for (path, hash) in entries {
-                    if !self.staged_files.contains_key(&path)
-                        || base_staged_files.contains_key(&path)
-                    {
+                    if !self.staged_files.contains_key(&path) {
                         self.staged_files.insert(path.clone(), hash.clone());
                         debug_log!("Loaded staged file from merge: {} -> {}", path, hash);
                     } else if let Some(existing_hash) = self.staged_files.get(&path) {
                         if existing_hash != &hash {
-                            let path1 = crate::utils::hash::hashstr2path(existing_hash.to_string());
-                            let path1 = format!("{}/{}", self.repo_path, path1);
-                            let path2 = format!("{}/{}", self.repo_path, hash);
-                            merge_conflict(path1, path2, path.clone());
-                            self.staged_files.insert(path.clone(), hash.clone());
-                            debug_log!("Merge conflict: {} -> {}", path, hash);
+                            // if let Some(base_hash) = base_staged_files.get(&path) {
+                                // if base_hash != &hash {
+                                    let path1 =
+                                        crate::utils::hash::hashstr2path(existing_hash.to_string());
+                                    let path1 = format!("{}/{}", self.repo_path, path1);
+                                    let path2 =
+                                        crate::utils::hash::hashstr2path(hash.to_string());                                   
+                                    let path2 = format!("{}/{}", self.repo_path, path2);
+                                    debug_log!("Merge conflict {} : {} -> {}",path, path1, path2);
+                                    merge_conflict(path1, path2, path.clone());
+                                    self.staged_files.insert(path.clone(), hash.clone());
+                                    
+                                // }
+                            // }
                         }
                     }
                 }
@@ -250,7 +265,8 @@ impl Index {
             .join("\n")
     }
     pub fn refresh(&self) {
-        for (path, hash_path) in &self.staged_files {
+        for (path, hash) in &self.staged_files {
+            let hash_path = format!("{}/{}", self.repo_path, hashstr2path(hash.clone()));
             match fs::read(&hash_path) {
                 Ok(content) => {
                     if let Err(e) = write(path, &content) {

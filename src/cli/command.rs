@@ -26,39 +26,33 @@ pub fn git_execute() {
             debug_log!("Committing changes with message: {}", message);
             crate::commands::commit::commit_command(message.as_str());
         }
-        crate::cli::args::ArgType::Branch(args) => {
-            debug_log!("Checking out branch: {}", args);
-            match args[0].as_str() {
-                "-d" => {
-                    crate::commands::branch::branch_command(
-                        &args[1],
-                        crate::commands::branch::BranchCommandType::Delete,
-                    );
-                    debug_log!("Checking out branch: {}", args[1]);
-                }
-                _ => {
-                    crate::commands::branch::branch_command(
-                        &args[0],
-                        crate::commands::branch::BranchCommandType::New,
-                    );
-                    debug_log!("Checking out branch: {}", args[0]);
-                }
+        crate::cli::args::ArgType::Branch(args) => match args[0].as_str() {
+            "-d" => {
+                crate::commands::branch::branch_command(
+                    &args[1],
+                    crate::commands::branch::BranchCommandType::Delete,
+                );
+                debug_log!("Checking out branch: {}", args[1]);
             }
-        }
-        crate::cli::args::ArgType::Checkout(args) => {
-            debug_log!("Checking out branch: {}", args);
-            match args.len() {
-                1 => {
-                    crate::commands::checkout::checkout_command(&args[0], false);
-                    debug_log!("Checking out branch: {}", args[0]);
-                }
-                2 => {
-                    crate::commands::checkout::checkout_command(&args[1], true);
-                    debug_log!("Checking out branch: {}", args[1]);
-                }
-                _ => {}
+            _ => {
+                crate::commands::branch::branch_command(
+                    &args[0],
+                    crate::commands::branch::BranchCommandType::New,
+                );
+                debug_log!("Checking out branch: {}", args[0]);
             }
-        }
+        },
+        crate::cli::args::ArgType::Checkout(args) => match args.len() {
+            1 => {
+                crate::commands::checkout::checkout_command(&args[0], false);
+                debug_log!("Checking out branch: {}", args[0]);
+            }
+            2 => {
+                crate::commands::checkout::checkout_command(&args[1], true);
+                debug_log!("Checking out branch: {}", args[1]);
+            }
+            _ => {}
+        },
         crate::cli::args::ArgType::Merge(name) => {
             debug_log!("Merge branch: {}", name);
             crate::commands::merge::merge_command(name.as_str());

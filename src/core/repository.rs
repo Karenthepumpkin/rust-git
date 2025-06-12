@@ -1,5 +1,6 @@
 use crate::commands::branch;
 use crate::debug_log;
+use crate::utils::hash::{hash2path, hashstr2path};
 // Git 仓库核心模块
 use super::blob::{self, BlobProcessor};
 use super::commit::CommitBuilder;
@@ -115,6 +116,7 @@ impl Repository {
             self.reference
                 .set_last_commit(&current_branch, &commit_hash);
         }
+        debug_log!("merge_commit {}", commit_hash);
         commit_hash
     }
     pub fn new_branch(&mut self, branch_name: &str) -> bool {
@@ -190,6 +192,8 @@ impl Repository {
     }
     pub fn merge(&mut self, merge_branch: String) {
         // 1. 获取当前分支和目标分支的最后一次提交
+        debug_log!("START MERGE\n\n\n");
+
         let current_branch = match self.reference.get_current_branch() {
             Some(b) => b,
             None => {
@@ -254,7 +258,20 @@ impl Repository {
             Some(hash) => get_tree_hash(hash),
             None => None,
         };
-        self.index.load_merge(current_tree, merge_tree, base_tree);
+        let current_tree_path = match current_tree {
+            Some(path) => Some(format!("{}/{}", self.path, hashstr2path(path))),
+            None => None,
+        };
+        let merge_tree_path = match merge_tree {
+            Some(path) => Some(format!("{}/{}", self.path, hashstr2path(path))),
+            None => None,
+        };
+        let base_tree_path = match base_tree {
+            Some(path) => Some(format!("{}/{}", self.path, hashstr2path(path))),
+            None => None,
+        };
+        self.index
+            .load_merge(current_tree_path, merge_tree_path, base_tree_path);
         self.index.refresh();
         self.merge_commit(
             self.reference.get_last_commit(&current_branch),
