@@ -1,4 +1,15 @@
 use crate::repo;
-pub fn branch_command(name: &str) {
-    repo!().new_branch(name);
+pub enum BranchCommandType {
+    New,
+    Delete,
+}
+pub fn branch_command(name: &str, ctype: BranchCommandType) {
+    match ctype {
+        BranchCommandType::New => {
+            repo!().new_branch(name);
+        }
+        BranchCommandType::Delete => {
+            repo!().delete_branch(name);
+        }
+    }
 }

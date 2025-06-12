@@ -132,6 +132,9 @@ impl Repository {
             .new_branch(branch_name, &last_commit.unwrap());
         true
     }
+    pub fn delete_branch(&mut self, branch_name: &str) {
+        self.reference.delete_branch(branch_name);
+    }
     pub fn set_current_branch(&mut self, branch_name: &str) -> bool {
         if self.reference.set_current_branch(branch_name) {
             debug_log!("Switched to branch: {}", branch_name);

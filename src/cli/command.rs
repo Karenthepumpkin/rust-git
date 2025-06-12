@@ -26,9 +26,25 @@ pub fn git_execute() {
             debug_log!("Committing changes with message: {}", message);
             crate::commands::commit::commit_command(message.as_str());
         }
-        crate::cli::args::ArgType::Branch(name) => {
-            debug_log!("Creating branch: {}", name);
-            crate::commands::branch::branch_command(name.as_str());
+        crate::cli::args::ArgType::Branch(args) => {
+            debug_log!("Checking out branch: {}", args);
+            match args[0].as_str() {
+                "-b" => {
+                    crate::commands::branch::branch_command(
+                        &args[1],
+                        crate::commands::branch::BranchCommandType::New,
+                    );
+                    debug_log!("Checking out branch: {}", args[0]);
+                }
+                "-d" => {
+                    crate::commands::branch::branch_command(
+                        &args[1],
+                        crate::commands::branch::BranchCommandType::Delete,
+                    );
+                    debug_log!("Checking out branch: {}", args[1]);
+                }
+                _ => {}
+            }
         }
         crate::cli::args::ArgType::Checkout(args) => {
             debug_log!("Checking out branch: {}", args);

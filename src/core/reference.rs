@@ -1,4 +1,5 @@
 use crate::debug_log;
+use std::path::Path;
 use std::{fs, sync::Arc};
 pub struct Reference {
     repo_path: Arc<String>,
@@ -71,6 +72,23 @@ impl Reference {
                 debug_log!("Failed to create new branch {}: {}", branch_name, e);
                 false
             }
+        }
+    }
+    pub fn delete_branch(&self, branch_name: &str) -> bool {
+        let ref_path = format!("{}/.git/refs/heads/{}", self.repo_path, branch_name);
+        let ref_path = Path::new(&ref_path);
+
+        if ref_path.exists() {
+            match fs::remove_file(ref_path) {
+                Ok(_) => {
+                    debug_log!("remove {}", branch_name);
+                    true
+                }
+                Err(e) => false,
+            }
+        } else {
+            debug_log!("{} not exist", branch_name);
+            false
         }
     }
     pub fn set_current_branch(&self, branch_name: &str) -> bool {
