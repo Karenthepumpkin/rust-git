@@ -69,7 +69,7 @@ impl Repository {
 impl Repository {
     pub fn stage_file(&mut self, path: &str) {
         if let Some(hash) = self.index.unstage_file(path) {
-            self.blob_processor.delete_blob(&hash);
+            // self.blob_processor.delete_blob(&hash);
         }
         let hash = self.blob_processor.create_blob(path);
         self.index.stage_file(path, &hash);

@@ -12,9 +12,9 @@ impl BlobProcessor {
         }
     }
     pub fn create_blob(&self, path: &str) -> String {
-        //TODO: Implement actual blob creation logic
         debug_log!("Creating blob with path: {}", path);
-        let content = match fs::read_to_string(path) {
+        let content = match fs::read(path) {
+            // 用 read 读取二进制
             Ok(c) => c,
             Err(e) => {
                 debug_log!("Failed to read file {}: {}", path, e);
@@ -22,7 +22,7 @@ impl BlobProcessor {
             }
         };
         crate::core::object::save(
-            crate::core::object::Object::Blob(content.to_string()),
+            crate::core::object::Object::Blob(content),
             self.repo_path.as_str(),
         )
     }

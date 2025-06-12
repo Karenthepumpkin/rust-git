@@ -1,3 +1,5 @@
+use std::path;
+
 use crate::cli::args::git_parse_args;
 use crate::debug_log;
 
@@ -10,9 +12,11 @@ pub fn git_execute() {
             debug_log!("Initializing git repository at {}", path);
             crate::commands::init::init_command(path.as_str());
         }
-        crate::cli::args::ArgType::Add(path) => {
-            debug_log!("Adding file to git repository: {}", path);
-            crate::commands::add::add_command(path.as_str());
+        crate::cli::args::ArgType::Add(path_vec) => {
+            for path in path_vec {
+                debug_log!("Adding file to git repository: {}", path);
+                crate::commands::add::add_command(&path);
+            }
         }
         crate::cli::args::ArgType::Rm(path) => {
             debug_log!("Removing file from git repository: {}", path);

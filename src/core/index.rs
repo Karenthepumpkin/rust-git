@@ -9,6 +9,66 @@ pub struct Index {
     repo_path: Arc<String>,
     staged_files: HashMap<String, String>,
 }
+pub fn merge_conflict(path1: String, path2: String, filename: String) {
+    use std::fs;
+    use std::io::{BufRead, BufReader};
+
+    let file1 = match fs::File::open(&path1) {
+        Ok(f) => f,
+        Err(e) => {
+            debug_log!("Failed to open {}: {}", path1, e);
+            return;
+        }
+    };
+    let file2 = match fs::File::open(&path2) {
+        Ok(f) => f,
+        Err(e) => {
+            debug_log!("Failed to open {}: {}", path2, e);
+            return;
+        }
+    };
+
+    let reader1 = BufReader::new(file1);
+    let reader2 = BufReader::new(file2);
+
+    let lines1: Vec<String> = reader1.lines().filter_map(Result::ok).collect();
+    let lines2: Vec<String> = reader2.lines().filter_map(Result::ok).collect();
+
+    let max_len = lines1.len().max(lines2.len());
+
+    let mut conflict_start: Option<usize> = None;
+
+    for i in 0..max_len {
+        let l1 = lines1.get(i);
+        let l2 = lines2.get(i);
+        let conflict = match (l1, l2) {
+            (Some(a), Some(b)) if a != b => true,
+            (Some(_), None) | (None, Some(_)) => true,
+            _ => false,
+        };
+
+        if conflict {
+            if conflict_start.is_none() {
+                conflict_start = Some(i + 1);
+            }
+        } else if let Some(start) = conflict_start {
+            if start == i {
+                println!("Merge conflict in {}:{}", filename, start);
+            } else {
+                println!("Merge conflict in {}:[{}, {}]", filename, start, i);
+            }
+            conflict_start = None;
+        }
+    }
+    // 处理结尾冲突
+    if let Some(start) = conflict_start {
+        if start == max_len {
+            println!("Merge conflict in {}:{}", filename, start);
+        } else {
+            println!("Merge conflict in {}:[{}, {}]", filename, start, max_len);
+        }
+    }
+}
 impl Index {
     pub fn new(repo_path: &Arc<String>) -> Self {
         Index {

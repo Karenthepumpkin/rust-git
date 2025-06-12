@@ -1,9 +1,9 @@
 use sha1::{Digest, Sha1};
 
-pub fn hash(s: &str) -> [u8; 20] {
+pub fn hash(s: &Vec<u8>) -> [u8; 20] {
     // 使用 SHA-1 计算哈希
     let mut hasher = Sha1::new();
-    hasher.update(s.as_bytes());
+    hasher.update(s);
     let result = hasher.finalize();
     let hash: [u8; 20] = result.into();
     hash
