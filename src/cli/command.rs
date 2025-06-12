@@ -1,6 +1,6 @@
 use std::path;
 
-use crate::cli::args::git_parse_args;
+use crate::cli::args::{self, git_parse_args};
 use crate::debug_log;
 
 pub fn git_execute() {
@@ -30,9 +30,19 @@ pub fn git_execute() {
             debug_log!("Creating branch: {}", name);
             crate::commands::branch::branch_command(name.as_str());
         }
-        crate::cli::args::ArgType::Checkout(name) => {
-            debug_log!("Checking out branch: {}", name);
-            crate::commands::checkout::checkout_command(name.as_str());
+        crate::cli::args::ArgType::Checkout(args) => {
+            debug_log!("Checking out branch: {}", args);
+            match args.len() {
+                1 => {
+                    crate::commands::checkout::checkout_command(&args[0], false);
+                    debug_log!("Checking out branch: {}", args[0]);
+                }
+                2 => {
+                    crate::commands::checkout::checkout_command(&args[1], true);
+                    debug_log!("Checking out branch: {}", args[1]);
+                }
+                _ => {}
+            }
         }
         crate::cli::args::ArgType::Merge(name) => {
             debug_log!("Merge branch: {}", name);

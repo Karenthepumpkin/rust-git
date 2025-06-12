@@ -1,4 +1,8 @@
-use crate::repo;
-pub fn checkout_command(name: &str) {
+use super::branch;
+use crate::{commands::branch::branch_command, repo};
+pub fn checkout_command(name: &str, new_branch: bool) {
+    if new_branch {
+        branch_command(name);
+    }
     repo!().set_current_branch(name);
 }

@@ -86,6 +86,28 @@ impl Reference {
             }
         }
     }
+    pub fn get_father_commit(&self, commit_hash: &str) -> Option<String> {
+        use std::fs::File;
+        use std::io::{BufRead, BufReader};
+
+        let (dir, file) = commit_hash.split_at(2);
+        let commit_path = format!("{}/.git/objects/{}/{}", self.repo_path, dir, file);
+
+        let file = match File::open(&commit_path) {
+            Ok(f) => f,
+            Err(e) => {
+                debug_log!("Failed to open commit object {}: {}", commit_path, e);
+                return None;
+            }
+        };
+        let reader = BufReader::new(file);
+        for line in reader.lines().flatten() {
+            if let Some(parent) = line.strip_prefix("parent ") {
+                return Some(parent.trim().to_string());
+            }
+        }
+        None
+    }
     pub fn setpath(&mut self, path: &Arc<String>) {
         self.repo_path = Arc::clone(path);
     }

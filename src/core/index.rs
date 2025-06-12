@@ -133,85 +133,90 @@ impl Index {
         }
         true
     }
-    pub fn load_merge(&mut self, path: String, path_merge: String, path_base: String) -> bool {
+    pub fn load_merge(
+        &mut self,
+        path: Option<String>,
+        path_merge: Option<String>,
+        path_base: Option<String>,
+    ) -> bool {
         self.staged_files.clear();
         let mut base_staged_files: HashMap<String, String> = HashMap::new();
-        let index_path = format!("{}/{}", self.repo_path, path_base);
-        let file = match File::open(&index_path) {
-            Ok(f) => f,
-            Err(e) => {
-                debug_log!("Failed to open index file: {}", e);
-                File::create(&index_path).ok();
-                return false;
-            }
-        };
-        let reader = BufReader::new(file);
-        for line in reader.lines() {
-            // 每一行内容为 path /t hash
-            if let Ok(line_content) = line {
-                let mut parts = line_content.rsplitn(2, '\t');
-                let hash = parts.next().unwrap_or("");
-                let path = parts.next().unwrap_or("");
-                if !path.is_empty() {
-                    base_staged_files.insert(path.to_string(), hash.to_string());
-                    debug_log!("Loaded staged file: {} -> {}", path, hash);
-                } else {
-                    debug_log!("Invalid line in index file: {}", line_content);
-                }
-            }
-        }
 
-        let index_path = format!("{}/{}", self.repo_path, path);
-        let file = match File::open(&index_path) {
-            Ok(f) => f,
-            Err(e) => {
-                debug_log!("Failed to open index file: {}", e);
-                File::create(&index_path).ok();
-                return false;
-            }
-        };
-        let reader = BufReader::new(file);
-        for line in reader.lines() {
-            // 每一行内容为 path /t hash
-            if let Ok(line_content) = line {
-                let mut parts = line_content.rsplitn(2, '\t');
-                let hash = parts.next().unwrap_or("");
-                let path = parts.next().unwrap_or("");
-                if !path.is_empty() {
-                    self.staged_files.insert(path.to_string(), hash.to_string());
-                    debug_log!("Loaded staged file: {} -> {}", path, hash);
-                } else {
-                    debug_log!("Invalid line in index file: {}", line_content);
+        // 封装读取 index 文件的逻辑
+        fn read_index(path: &str) -> Option<Vec<(String, String)>> {
+            let file = match File::open(path) {
+                Ok(f) => f,
+                Err(e) => {
+                    debug_log!("Failed to open index file: {}", e);
+                    File::create(path).ok()?;
+                    return None;
                 }
-            }
-        }
-        let index_path = format!("{}/{}", self.repo_path, path_merge);
-        let file = match File::open(&index_path) {
-            Ok(f) => f,
-            Err(e) => {
-                debug_log!("Failed to open index file: {}", e);
-                File::create(&index_path).ok();
-                return false;
-            }
-        };
-        let reader = BufReader::new(file);
-        for line in reader.lines() {
-            // 每一行内容为 path /t hash
-            if let Ok(line_content) = line {
-                let mut parts = line_content.rsplitn(2, '\t');
-                let hash = parts.next().unwrap_or("");
-                let path = parts.next().unwrap_or("");
-                if !path.is_empty() {
-                    if !self.staged_files.contains_key(path) || base_staged_files.contains_key(path)
-                    {
-                        self.staged_files.insert(path.to_string(), hash.to_string());
-                        debug_log!("Loaded staged file: {} -> {}", path, hash);
+            };
+            let reader = BufReader::new(file);
+            let mut entries = Vec::new();
+            for line in reader.lines() {
+                if let Ok(line_content) = line {
+                    let mut parts = line_content.rsplitn(2, '\t');
+                    let hash = parts.next().unwrap_or("");
+                    let path = parts.next().unwrap_or("");
+                    if !path.is_empty() {
+                        entries.push((path.to_string(), hash.to_string()));
                     } else {
                         debug_log!("Invalid line in index file: {}", line_content);
                     }
                 }
             }
+            Some(entries)
         }
+        if let Some(path_base) = path_base {
+            let index_path = format!("{}/{}", self.repo_path, path_base);
+            if let Some(entries) = read_index(&index_path) {
+                for (path, hash) in entries {
+                    base_staged_files.insert(path.clone(), hash.clone());
+                    debug_log!("Loaded staged file from base: {} -> {}", path, hash);
+                }
+            } else {
+                return false;
+            }
+        }
+        if let Some(path) = &path {
+            let index_path = format!("{}/{}", self.repo_path, path);
+            if let Some(entries) = read_index(&index_path) {
+                for (path, hash) in entries {
+                    self.staged_files.insert(path.clone(), hash.clone());
+                    debug_log!("Loaded staged file from current: {} -> {}", path, hash);
+                }
+            } else {
+                return false;
+            }
+        }
+
+        // 3. 加载合并分支 path_merge
+        if let Some(path_merge) = &path_merge {
+            let index_path = format!("{}/{}", self.repo_path, path_merge);
+            if let Some(entries) = read_index(&index_path) {
+                for (path, hash) in entries {
+                    if !self.staged_files.contains_key(&path)
+                        || base_staged_files.contains_key(&path)
+                    {
+                        self.staged_files.insert(path.clone(), hash.clone());
+                        debug_log!("Loaded staged file from merge: {} -> {}", path, hash);
+                    } else if let Some(existing_hash) = self.staged_files.get(&path) {
+                        if existing_hash != &hash {
+                            let path1 = crate::utils::hash::hashstr2path(existing_hash.to_string());
+                            let path1 = format!("{}/{}", self.repo_path, path1);
+                            let path2 = format!("{}/{}", self.repo_path, hash);
+                            merge_conflict(path1, path2, path.clone());
+                            self.staged_files.insert(path.clone(), hash.clone());
+                            debug_log!("Merge conflict: {} -> {}", path, hash);
+                        }
+                    }
+                }
+            } else {
+                return false;
+            }
+        }
+
         true
     }
     pub fn save(&self) -> bool {

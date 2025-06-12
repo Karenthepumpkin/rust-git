@@ -99,6 +99,24 @@ impl Repository {
         }
         commit_hash
     }
+    pub fn merge_commit(
+        &mut self,
+        parent_commit: Option<String>,
+        path_merge: Option<String>,
+    ) -> String {
+        // 创建树对象
+        let tree_hash = self.tree.create_tree(&self.index.get_tree());
+        // 创建提交对象
+        let current_branch = self.reference.get_current_branch();
+        let commit_hash =
+            self.commit
+                .merge_commit(&tree_hash, parent_commit.as_deref(), path_merge.as_deref());
+        if let Some(current_branch) = current_branch {
+            self.reference
+                .set_last_commit(&current_branch, &commit_hash);
+        }
+        commit_hash
+    }
     pub fn new_branch(&mut self, branch_name: &str) -> bool {
         let current_branch = self.reference.get_current_branch();
         let last_commit = if let Some(ref branch) = current_branch {
@@ -155,6 +173,90 @@ impl Repository {
     }
     pub fn refresh(&self) {
         self.index.refresh();
+    }
+    pub fn get_all_ancestors(&self, mut commit: String) -> std::collections::HashSet<String> {
+        let mut ancestors = std::collections::HashSet::new();
+        while !commit.is_empty() && ancestors.insert(commit.clone()) {
+            if let Some(parent) = self.reference.get_father_commit(&commit) {
+                commit = parent;
+            } else {
+                break;
+            }
+        }
+        ancestors
+    }
+    pub fn merge(&mut self, merge_branch: String) {
+        // 1. 获取当前分支和目标分支的最后一次提交
+        let current_branch = match self.reference.get_current_branch() {
+            Some(b) => b,
+            None => {
+                debug_log!("No current branch");
+                return;
+            }
+        };
+
+        let current_commit = match self.reference.get_last_commit(&current_branch) {
+            Some(c) => c,
+            None => {
+                debug_log!("No commit on current branch");
+                return;
+            }
+        };
+        let merge_commit = match self.reference.get_last_commit(&merge_branch) {
+            Some(c) => c,
+            None => {
+                debug_log!("No commit on merge branch");
+                return;
+            }
+        };
+        let current_ancestors = self.get_all_ancestors(current_commit.clone());
+        let mut base_commit = None;
+        let mut merge_iter = merge_commit.clone();
+        while !merge_iter.is_empty() {
+            if current_ancestors.contains(&merge_iter) {
+                base_commit = Some(merge_iter.clone());
+                break;
+            }
+            if let Some(parent) = self.reference.get_father_commit(&merge_iter) {
+                merge_iter = parent;
+            } else {
+                break;
+            }
+        }
+        let base_branch = match &base_commit {
+            Some(b) => b,
+            None => {
+                debug_log!("No common ancestor found for merge");
+                return;
+            }
+        };
+        debug_log!("merge base: {}", base_branch);
+        // 2. 获取 tree hash
+        let get_tree_hash = |commit_hash: &str| -> Option<String> {
+            use std::fs::File;
+            use std::io::{BufRead, BufReader};
+            let (dir, file) = commit_hash.split_at(2);
+            let commit_path = format!("{}/.git/objects/{}/{}", self.path, dir, file);
+            let file = File::open(&commit_path).ok()?;
+            let mut reader = BufReader::new(file);
+            let mut first_line = String::new();
+            reader.read_line(&mut first_line).ok()?;
+            first_line
+                .strip_prefix("tree ")
+                .map(|s| s.trim().to_string())
+        };
+        let current_tree = get_tree_hash(&current_commit);
+        let merge_tree = get_tree_hash(&merge_commit);
+        let base_tree = match &base_commit {
+            Some(hash) => get_tree_hash(hash),
+            None => None,
+        };
+        self.index.load_merge(current_tree, merge_tree, base_tree);
+        self.index.refresh();
+        self.merge_commit(
+            self.reference.get_last_commit(&current_branch),
+            self.reference.get_last_commit(&merge_branch),
+        );
     }
 }
 pub fn is_git_repo(path: &str) -> bool {

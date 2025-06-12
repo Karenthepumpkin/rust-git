@@ -6,7 +6,7 @@ pub enum ArgType {
     Rm(String),
     Commit(String),
     Branch(String),
-    Checkout(String),
+    Checkout(Vec<String>),
     Merge(String),
 }
 pub fn git_parse_args() -> ArgType {
@@ -52,8 +52,9 @@ pub fn git_parse_args() -> ArgType {
             "checkout" => {
                 match args.len() {
                     2 => ArgType::Error(ErrorType::InvalidArgument), // 如果只有 checkout 命令则报错
-                    3 => ArgType::Checkout(args[2].clone()), // 如果有额外参数则使用该参数作为路径
-                    _ => ArgType::Error(ErrorType::InvalidArgument), // 如果有额外参数则报错
+                    3 => ArgType::Checkout(args[2..].to_vec()), // 如果有额外参数则使用该参数作为路径
+                    4 => ArgType::Checkout(args[2..].to_vec()),
+                    _ => ArgType::Error(ErrorType::InvalidArgument),
                 }
             }
             "merge" => {

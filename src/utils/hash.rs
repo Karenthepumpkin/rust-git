@@ -13,3 +13,7 @@ pub fn hash2path(hash: [u8; 20]) -> String {
     let (dir, file) = hash_str.split_at(2);
     format!(".git/objects/{}/{}", dir, file)
 }
+pub fn hashstr2path(hash_str: String) -> String {
+    let (dir, file) = hash_str.split_at(2);
+    format!(".git/objects/{}/{}", dir, file)
+}
